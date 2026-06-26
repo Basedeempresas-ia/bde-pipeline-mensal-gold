@@ -1,14 +1,18 @@
 # Template de configuração do BDE Pipeline Mensal Gold.
 # Não incluir segredos, tokens, credenciais ou caminhos com dados reais neste arquivo.
 
-project:
-  name: bde-pipeline-mensal-gold
-  environment: local
-
-pipeline:
-  enabled: false
-  description: "Template sem implementação de pipeline real."
+competencia: "2026-01"
+ano_referencia: 2026
+mes_referencia: 1
+competencia_slug: "2026_01"
+local_root: "/tmp/bde-pipeline-mensal-gold"
+gdrive_root: "/content/drive/MyDrive/bde-pipeline-mensal-gold"
+dry_run: true
 
 paths:
-  input_dir: "data/input"
-  output_dir: "data/output"
+  raw: raw
+  staging: staging
+  processed: processed
+  outputs: outputs
+  exports: exports
+  logs: logs
