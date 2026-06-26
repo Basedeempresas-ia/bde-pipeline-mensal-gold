@@ -127,6 +127,7 @@ def test_sync_manifest_is_written_with_minimum_fields(tmp_path: Path) -> None:
         "destination_root",
         "files_copied",
         "files_skipped",
+        "missing_paths",
         "dry_run",
         "status",
         "data_processamento",
@@ -134,6 +135,7 @@ def test_sync_manifest_is_written_with_minimum_fields(tmp_path: Path) -> None:
         assert field in manifest
     assert manifest["direction"] == "local_to_gdrive"
     assert manifest["dry_run"] is True
+    assert manifest["missing_paths"] == []
 
 
 def test_sync_checkpoint_only_when_not_dry_run_and_status_ok(tmp_path: Path) -> None:
@@ -154,6 +156,65 @@ def test_sync_checkpoint_only_when_not_dry_run_and_status_ok(tmp_path: Path) -> 
     checkpoint = result.checkpoint_path.read_text(encoding="utf-8")
     assert "status=ok" in checkpoint
     assert "direction=local_to_gdrive" in checkpoint
+
+
+def test_sync_missing_path_returns_error_and_manifest_missing_paths(tmp_path: Path) -> None:
+    context = make_context(tmp_path, dry_run=False)
+    source_file = write_text(context.local_month_root / "outputs" / "a.txt", "a")
+    missing_file = context.local_month_root / "outputs" / "missing.txt"
+
+    result = sync_stage_to_gdrive(
+        context,
+        "stage_missing",
+        [source_file, missing_file],
+    )
+
+    assert result.status == "error"
+    assert result.files_copied == []
+    assert result.missing_paths == [str(missing_file)]
+    assert result.checkpoint_path is None
+    assert not (context.gdrive_month_root / "outputs" / "a.txt").exists()
+
+    assert result.manifest_path is not None
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    assert manifest["status"] == "error"
+    assert manifest["missing_paths"] == [str(missing_file)]
+    assert not (
+        context.local_month_root / "outputs" / "checkpoints" / "stage_missing_sync.ok"
+    ).exists()
+
+
+def test_sync_persists_audit_artifacts_to_gdrive_when_not_dry_run(tmp_path: Path) -> None:
+    context = make_context(tmp_path, dry_run=False)
+    source_file = write_text(context.local_month_root / "outputs" / "a.txt", "a")
+
+    result = sync_stage_to_gdrive(context, "stage_audit", [source_file])
+
+    assert result.status == "ok"
+    assert result.manifest_path is not None
+    assert result.checkpoint_path is not None
+    assert (context.gdrive_month_root / "outputs" / "manifests" / "stage_audit_sync_manifest.json").exists()
+    assert (context.gdrive_month_root / "outputs" / "checkpoints" / "stage_audit_sync.ok").exists()
+
+
+def test_sync_dry_run_does_not_persist_audit_artifacts_to_gdrive(tmp_path: Path) -> None:
+    context = make_context(tmp_path, dry_run=True)
+    source_file = write_text(context.local_month_root / "outputs" / "a.txt", "a")
+
+    result = sync_stage_to_gdrive(context, "stage_audit_dry", [source_file])
+
+    assert result.status == "ok"
+    assert result.manifest_path is not None
+    assert result.checkpoint_path is None
+    assert not (
+        context.gdrive_month_root
+        / "outputs"
+        / "manifests"
+        / "stage_audit_dry_sync_manifest.json"
+    ).exists()
+    assert not (
+        context.gdrive_month_root / "outputs" / "checkpoints" / "stage_audit_dry_sync.ok"
+    ).exists()
 
 
 def test_restore_month_from_gdrive_copies_to_local(tmp_path: Path) -> None:
