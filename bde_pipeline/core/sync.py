@@ -22,6 +22,7 @@ class SyncResult:
     status: str
     manifest_path: Path | None
     checkpoint_path: Path | None
+    missing_paths: list[str]
 
 
 def _is_ignored(path: Path) -> bool:
@@ -43,6 +44,10 @@ def collect_files_to_sync(paths: list[Path]) -> list[Path]:
                     collected.add(child)
 
     return sorted(collected)
+
+
+def validate_sync_inputs(paths_to_sync: list[Path]) -> list[Path]:
+    return sorted(path for path in paths_to_sync if not path.exists())
 
 
 def copy_paths(
@@ -97,6 +102,7 @@ def write_sync_manifest(
         "files_skipped": result_payload["files_skipped"],
         "dry_run": result_payload["dry_run"],
         "status": result_payload["status"],
+        "missing_paths": result_payload["missing_paths"],
         "data_processamento": context.data_processamento,
     }
     return write_json(manifest_path, payload)
@@ -137,6 +143,7 @@ def _build_result_payload(
     files_skipped: list[str],
     dry_run: bool,
     status: str,
+    missing_paths: list[str] | None = None,
 ) -> dict:
     return {
         "source_root": source_root,
@@ -145,6 +152,7 @@ def _build_result_payload(
         "files_skipped": files_skipped,
         "dry_run": dry_run,
         "status": status,
+        "missing_paths": missing_paths or [],
     }
 
 
@@ -158,21 +166,42 @@ def sync_stage_to_gdrive(
     resolved_dry_run = context.dry_run if dry_run is None else dry_run
     source_root = context.local_month_root
     destination_root = context.gdrive_month_root
-    files_copied, files_skipped = copy_paths(
-        paths_to_sync,
-        source_root=source_root,
-        destination_root=destination_root,
-        dry_run=resolved_dry_run,
-        overwrite=overwrite,
-    )
-    status = "ok"
+    missing_paths = [str(path) for path in validate_sync_inputs(paths_to_sync)]
+    if missing_paths:
+        files_copied: list[str] = []
+        files_skipped: list[str] = []
+        status = "error"
+    else:
+        files_copied, files_skipped = copy_paths(
+            paths_to_sync,
+            source_root=source_root,
+            destination_root=destination_root,
+            dry_run=resolved_dry_run,
+            overwrite=overwrite,
+        )
+        status = "ok"
+
     payload = _build_result_payload(
-        source_root, destination_root, files_copied, files_skipped, resolved_dry_run, status
+        source_root,
+        destination_root,
+        files_copied,
+        files_skipped,
+        resolved_dry_run,
+        status,
+        missing_paths,
     )
     manifest_path = write_sync_manifest(context, stage, "local_to_gdrive", payload)
     checkpoint_path = None
     if status == "ok" and not resolved_dry_run:
         checkpoint_path = write_sync_checkpoint(context, stage, "local_to_gdrive", status)
+        audit_paths = [manifest_path, checkpoint_path]
+        copy_paths(
+            audit_paths,
+            source_root=source_root,
+            destination_root=destination_root,
+            dry_run=False,
+            overwrite=True,
+        )
 
     return SyncResult(
         stage=stage,
@@ -185,6 +214,7 @@ def sync_stage_to_gdrive(
         status=status,
         manifest_path=manifest_path,
         checkpoint_path=checkpoint_path,
+        missing_paths=missing_paths,
     )
 
 
@@ -198,17 +228,29 @@ def restore_month_from_gdrive(
     source_root = context.gdrive_month_root
     destination_root = context.local_month_root
     source_paths = paths_to_restore or [source_root]
-    files_copied, files_skipped = copy_paths(
-        source_paths,
-        source_root=source_root,
-        destination_root=destination_root,
-        dry_run=resolved_dry_run,
-        overwrite=overwrite,
-    )
-    status = "ok"
+    missing_paths = [str(path) for path in validate_sync_inputs(source_paths)]
+    if missing_paths:
+        files_copied = []
+        files_skipped = []
+        status = "error"
+    else:
+        files_copied, files_skipped = copy_paths(
+            source_paths,
+            source_root=source_root,
+            destination_root=destination_root,
+            dry_run=resolved_dry_run,
+            overwrite=overwrite,
+        )
+        status = "ok"
     stage = "restore_month"
     payload = _build_result_payload(
-        source_root, destination_root, files_copied, files_skipped, resolved_dry_run, status
+        source_root,
+        destination_root,
+        files_copied,
+        files_skipped,
+        resolved_dry_run,
+        status,
+        missing_paths,
     )
     manifest_path = write_sync_manifest(context, stage, "gdrive_to_local", payload)
     checkpoint_path = None
@@ -226,6 +268,7 @@ def restore_month_from_gdrive(
         status=status,
         manifest_path=manifest_path,
         checkpoint_path=checkpoint_path,
+        missing_paths=missing_paths,
     )
 
 
@@ -233,6 +276,7 @@ __all__ = [
     "SyncResult",
     "collect_files_to_sync",
     "copy_paths",
+    "validate_sync_inputs",
     "write_sync_manifest",
     "write_sync_checkpoint",
     "sync_stage_to_gdrive",
