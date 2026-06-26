@@ -132,6 +132,13 @@ def test_run_stage_00_creates_expected_structure_and_artifacts(tmp_path: Path) -
     assert qa["directory_count"] == len(MONTHLY_DIRECTORIES)
     assert qa["required_directories_present"] is True
     assert qa["missing_directories"] == []
+    assert qa["linhas_entrada"] == 0
+    assert qa["linhas_saida"] == 0
+    assert qa["chaves_nulas"] == {}
+    assert qa["duplicidade_de_chave"] == 0
+    assert qa["cardinalidade_preservada"] is True
+    assert qa["top_erros"] == []
+    assert qa["checkpoint_ok"] is True
     assert qa["checkpoint_allowed"] is True
 
     assert "run_id=test_run" in checkpoint
