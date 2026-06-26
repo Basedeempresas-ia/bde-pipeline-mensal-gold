@@ -48,6 +48,7 @@ tests/
 ## Documentação
 
 - [Contratos dos artefatos mensais](docs/CONTRATOS_ARTEFATOS.md)
+- [Política operacional Colab/GDrive](docs/POLITICA_COLAB_GDRIVE.md)
 
 ## Validações locais
 

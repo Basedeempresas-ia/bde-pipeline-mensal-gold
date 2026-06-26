@@ -11,6 +11,7 @@ REQUIRED_PATHS = [
     "docs/GOVERNANCA_REPOSITORIO.md",
     "docs/ARQUITETURA_PIPELINE_MENSAL_GOLD.md",
     "docs/CONTRATOS_ARTEFATOS.md",
+    "docs/POLITICA_COLAB_GDRIVE.md",
     "configs/config_template.yaml",
     "bde_pipeline/__init__.py",
     "bde_pipeline/core/__init__.py",
