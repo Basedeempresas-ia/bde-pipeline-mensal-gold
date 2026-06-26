@@ -50,6 +50,12 @@ tests/
 - [Contratos dos artefatos mensais](docs/CONTRATOS_ARTEFATOS.md)
 - [Política operacional Colab/GDrive](docs/POLITICA_COLAB_GDRIVE.md)
 
+## Stage 00 admin ambiente
+
+```bash
+python -m bde_pipeline.stages.stage_00_admin --config configs/config_template.yaml
+```
+
 ## Validações locais
 
 ```bash
