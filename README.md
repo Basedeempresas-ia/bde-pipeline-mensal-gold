@@ -63,3 +63,5 @@ python -m compileall bde_pipeline
 python -m pytest -q tests
 git diff --check
 ```
+
+Sync/restore Colab/GDrive primitives are implemented in bde_pipeline/core/sync.py and tested with tmp_path.
