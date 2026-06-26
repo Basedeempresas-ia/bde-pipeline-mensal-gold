@@ -10,6 +10,7 @@ REQUIRED_PATHS = [
     ".github/workflows/ci.yml",
     "docs/GOVERNANCA_REPOSITORIO.md",
     "docs/ARQUITETURA_PIPELINE_MENSAL_GOLD.md",
+    "docs/CONTRATOS_ARTEFATOS.md",
     "configs/config_template.yaml",
     "bde_pipeline/__init__.py",
     "bde_pipeline/core/__init__.py",

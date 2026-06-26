@@ -37,12 +37,17 @@ bde_pipeline/
   stages/__init__.py
 docs/
   ARQUITETURA_PIPELINE_MENSAL_GOLD.md
+  CONTRATOS_ARTEFATOS.md
   GOVERNANCA_REPOSITORIO.md
 notebooks/
   .gitkeep
 tests/
   test_repository_contract.py
 ```
+
+## Documentação
+
+- [Contratos dos artefatos mensais](docs/CONTRATOS_ARTEFATOS.md)
 
 ## Validações locais
 
